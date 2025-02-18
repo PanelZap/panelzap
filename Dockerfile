@@ -1,5 +1,5 @@
-FROM --platform=$BUILDPLATFORM node:latest AS node
-FROM --platform=$BUILDPLATFORM php:8.3-cli-bullseye
+FROM node:latest AS node
+FROM php:8.3-cli-bullseye
 
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
