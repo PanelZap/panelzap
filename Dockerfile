@@ -1,12 +1,7 @@
-FROM --platform=$BUILDPLATFORM node:latest AS node
-FROM --platform=$BUILDPLATFORM php:8.3-cli-bullseye
+# Estágio base: Instalar PHP, Node.js e dependências
+FROM php:8.3-cli
 
-COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
-COPY --from=node /usr/local/bin/node /usr/local/bin/node
-RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
-
-COPY . /var/www/html
-
+# Instalar dependências do sistema, Node.js e npm
 RUN apt-get update && apt-get install -y \
     curl \
     zip \
@@ -19,38 +14,40 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libfreetype6-dev \
     libmcrypt-dev \
-    libssl-dev
+    libssl-dev \
+    gnupg2 \
+    lsb-release \
+    ca-certificates \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-configure gd \
---with-freetype=/usr/include/ \
---with-jpeg=/usr/include/
+# Configurar e instalar extensões PHP necessárias
+RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
+    && docker-php-ext-install -j$(nproc) \
+    pdo pdo_mysql pdo_pgsql gd bcmath opcache mbstring intl exif pcntl \
+    && pecl install redis && docker-php-ext-enable redis
 
-RUN docker-php-ext-install -j$(nproc) \
-    pdo \
-    pdo_mysql \
-    pdo_pgsql \
-    gd \
-    bcmath \
-    opcache \
-    mbstring \
-    intl \
-    exif \
-    pcntl 
+# Copiar o Composer do contêiner oficial para o nosso contêiner
+COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 
-RUN pecl install redis && docker-php-ext-enable redis
+# Copiar arquivos do projeto para o contêiner
+COPY . /var/www/html
 
 WORKDIR /var/www/html
 
-COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
-
+# Instalar dependências PHP via Composer (cacheável se não houver alterações em composer.json)
 RUN composer install --no-dev --optimize-autoloader
 
+# Criar link para armazenamento
 RUN php artisan storage:link
 
+# Gerar API docs (scribe)
 RUN php artisan scribe:generate
 
-RUN npm install && npm run build
-
+# Expor a porta 8000 para o servidor PHP
 EXPOSE 8000
 
+# Rodar o servidor PHP
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]

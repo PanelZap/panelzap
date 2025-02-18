@@ -8,9 +8,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       packages: write
+
     steps:
       # Converter o nome do repositório para lowercase
       - name: Convert to lowercase
@@ -27,19 +29,29 @@ jobs:
       - name: Login to GitHub Container Registry
         run: echo ${{ secrets.PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         
-      # Configurar o QEMU para suportar múltiplas arquiteturas
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # Configurar o Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Construir e enviar as imagens (latest e version) para ambas as plataformas (amd64 e arm64)
-      - name: Build and Push Docker Images
+      # Construir e enviar a imagem para amd64
+      - name: Build the Docker Image for amd64
         run: |
-          docker buildx create --use
-          docker buildx build --platform linux/amd64,linux/arm64 \
-            -t ghcr.io/${{ env.lower_name }}:latest \
-            -t ghcr.io/${{ env.lower_name }}:${{ github.ref_name }} \
-            . --push
+          docker buildx create --use # Cria o builder se não existir
+          docker buildx build --platform linux/amd64 -t ghcr.io/${{ env.lower_name }}:latest . --push
+
+      # Construir e enviar a imagem para arm64
+      - name: Build the Docker Image for arm64
+        run: |
+          docker buildx build --platform linux/arm64 -t ghcr.io/${{ env.lower_name }}:latest . --push
+
+      # Construir e enviar a imagem com a tag da versão para amd64
+      - name: Build the Docker Image Version for amd64
+        run: |
+          docker buildx build --platform linux/amd64 -t ghcr.io/${{ env.lower_name }}:${{ github.ref_name }} . --push
+
+      # Construir e enviar a imagem com a tag da versão para arm64
+      - name: Build the Docker Image Version for arm64
+        run: |
+          docker buildx build --platform linux/arm64 -t ghcr.io/${{ env.lower_name }}:${{ github.ref_name }} . --push
