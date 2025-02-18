@@ -39,19 +39,19 @@ jobs:
       - name: Build the Docker Image for amd64
         run: |
           docker buildx create --use # Cria o builder se não existir
-          docker buildx build --platform linux/amd64 -t ghcr.io/${{ env.lower_name }}:latest . --load
+          docker buildx build --platform linux/amd64 -t ghcr.io/${{ env.lower_name }}:latest . --push
 
       # Construir e enviar a imagem para arm64
       - name: Build the Docker Image for arm64
         run: |
-          docker buildx build --platform linux/arm64 -t ghcr.io/${{ env.lower_name }}:latest . --load
+          docker buildx build --platform linux/arm64 -t ghcr.io/${{ env.lower_name }}:latest . --push
 
       # Construir e enviar a imagem com a tag da versão para amd64
       - name: Build the Docker Image Version for amd64
         run: |
-          docker buildx build --platform linux/amd64 -t ghcr.io/${{ env.lower_name }}:${{ github.ref_name }} . --load
+          docker buildx build --platform linux/amd64 -t ghcr.io/${{ env.lower_name }}:${{ github.ref_name }} . --push
 
       # Construir e enviar a imagem com a tag da versão para arm64
       - name: Build the Docker Image Version for arm64
         run: |
-          docker buildx build --platform linux/arm64 -t ghcr.io/${{ env.lower_name }}:${{ github.ref_name }} . --load
+          docker buildx build --platform linux/arm64 -t ghcr.io/${{ env.lower_name }}:${{ github.ref_name }} . --push
