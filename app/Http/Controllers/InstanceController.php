@@ -65,7 +65,7 @@ class InstanceController extends Controller
             Instance::create($validatedData);
             return redirect()->route('instances.index')->with('success', 'Instância criada com sucesso!');
         } catch (\Exception $e) {
-            dd($e);
+            Log::error('Erro ao criar instância: ' . $e->getMessage());
             return back()->with('error', 'Erro ao criar instância!');
         }
     }
@@ -146,7 +146,6 @@ class InstanceController extends Controller
             $instance->delete();
             return back()->with('success', 'Instância excluída com sucesso');
         } catch (\Exception $exception) {
-            dd($exception);
             Log::channel('daily')->error('Erro ao excluir o instância: ' . $exception->getMessage());
             return back()->with('error', 'Não foi possível excluir o instância');
         }
